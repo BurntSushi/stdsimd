@@ -1470,6 +1470,10 @@ pub unsafe fn _mm_sfence() {
 /// For more info see [`_mm_setcsr`](fn._mm_setcsr.html)
 ///
 /// [Intel's documentation](https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_getcsr)
+#[rustc_deprecated(
+    since = "1.40.0",
+    reason = "modifying MXCSR causes undefined behavior in LLVM, see https://github.com/rust-lang/stdarch/issues/781"
+)]
 #[inline]
 #[target_feature(enable = "sse")]
 #[cfg_attr(test, assert_instr(stmxcsr))]
@@ -1607,6 +1611,10 @@ pub unsafe fn _mm_getcsr() -> u32 {
 ///
 ///
 /// [Intel's documentation](https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_setcsr)
+#[rustc_deprecated(
+    since = "1.40.0",
+    reason = "modifying MXCSR causes undefined behavior in LLVM, see https://github.com/rust-lang/stdarch/issues/781"
+)]
 #[inline]
 #[target_feature(enable = "sse")]
 #[cfg_attr(test, assert_instr(ldmxcsr))]
