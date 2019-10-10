@@ -1472,7 +1472,7 @@ pub unsafe fn _mm_sfence() {
 /// [Intel's documentation](https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_getcsr)
 #[rustc_deprecated(
     since = "1.40.0",
-    reason = "modifying MXCSR causes undefined behavior in LLVM, see https://github.com/rust-lang/stdarch/issues/781"
+    reason = "accessing floating point exception state causes undefined behavior in LLVM, see https://github.com/rust-lang/stdarch/issues/781"
 )]
 #[inline]
 #[target_feature(enable = "sse")]
@@ -1486,134 +1486,12 @@ pub unsafe fn _mm_getcsr() -> u32 {
 
 /// Sets the MXCSR register with the 32-bit unsigned integer value.
 ///
-/// This register constrols how SIMD instructions handle floating point
-/// operations. Modifying this register only affects the current thread.
-///
-/// It contains several groups of flags:
-///
-/// * *Exception flags* report which exceptions occurred since last they were
-/// reset.
-///
-/// * *Masking flags* can be used to mask (ignore) certain exceptions. By
-/// default
-/// these flags are all set to 1, so all exceptions are masked. When an
-/// an exception is masked, the processor simply sets the exception flag and
-/// continues the operation. If the exception is unmasked, the flag is also set
-/// but additionally an exception handler is invoked.
-///
-/// * *Rounding mode flags* control the rounding mode of floating point
-/// instructions.
-///
-/// * The *denormals-are-zero mode flag* turns all numbers which would be
-/// denormalized (exponent bits are all zeros) into zeros.
-///
-/// ## Exception Flags
-///
-/// * `_MM_EXCEPT_INVALID`: An invalid operation was performed (e.g., dividing
-///   Infinity by Infinity).
-///
-/// * `_MM_EXCEPT_DENORM`: An operation attempted to operate on a denormalized
-///   number. Mainly this can cause loss of precision.
-///
-/// * `_MM_EXCEPT_DIV_ZERO`: Division by zero occured.
-///
-/// * `_MM_EXCEPT_OVERFLOW`: A numeric overflow exception occured, i.e., a
-/// result was too large to be represented (e.g., an `f32` with absolute
-/// value
-///   greater than `2^128`).
-///
-/// * `_MM_EXCEPT_UNDERFLOW`: A numeric underflow exception occured, i.e., a
-/// result was too small to be represented in a normalized way (e.g., an
-/// `f32`
-///   with absulte value smaller than `2^-126`.)
-///
-/// * `_MM_EXCEPT_INEXACT`: An inexact-result exception occured (a.k.a.
-///   precision exception). This means some precision was lost due to rounding.
-///   For example, the fraction `1/3` cannot be represented accurately in a
-///   32 or 64 bit float and computing it would cause this exception to be
-///   raised. Precision exceptions are very common, so they are usually masked.
-///
-/// Exception flags can be read and set using the convenience functions
-/// `_MM_GET_EXCEPTION_STATE` and `_MM_SET_EXCEPTION_STATE`. For example, to
-/// check if an operation caused some overflow:
-///
-/// ```rust,ignore
-/// _MM_SET_EXCEPTION_STATE(0); // clear all exception flags
-///                             // perform calculations
-/// if _MM_GET_EXCEPTION_STATE() & _MM_EXCEPT_OVERFLOW != 0 {
-///     // handle overflow
-/// }
-/// ```
-///
-/// ## Masking Flags
-///
-/// There is one masking flag for each exception flag: `_MM_MASK_INVALID`,
-/// `_MM_MASK_DENORM`, `_MM_MASK_DIV_ZERO`, `_MM_MASK_OVERFLOW`,
-/// `_MM_MASK_UNDERFLOW`, `_MM_MASK_INEXACT`.
-///
-/// A single masking bit can be set via
-///
-/// ```rust,ignore
-/// _MM_SET_EXCEPTION_MASK(_MM_MASK_UNDERFLOW);
-/// ```
-///
-/// However, since mask bits are by default all set to 1, it is more common to
-/// want to *disable* certain bits. For example, to unmask the underflow
-/// exception, use:
-///
-/// ```rust,ignore
-/// _mm_setcsr(_mm_getcsr() & !_MM_MASK_UNDERFLOW); // unmask underflow
-/// exception
-/// ```
-///
-/// Warning: an unmasked exception will cause an exception handler to be
-/// called.
-/// The standard handler will simply terminate the process. So, in this case
-/// any underflow exception would terminate the current process with something
-/// like `signal: 8, SIGFPE: erroneous arithmetic operation`.
-///
-/// ## Rounding Mode
-///
-/// The rounding mode is describe using two bits. It can be read and set using
-/// the convenience wrappers `_MM_GET_ROUNDING_MODE()` and
-/// `_MM_SET_ROUNDING_MODE(mode)`.
-///
-/// The rounding modes are:
-///
-/// * `_MM_ROUND_NEAREST`: (default) Round to closest to the infinite precision
-///   value. If two values are equally close, round to even (i.e., least
-///   significant bit will be zero).
-///
-/// * `_MM_ROUND_DOWN`: Round toward negative Infinity.
-///
-/// * `_MM_ROUND_UP`: Round toward positive Infinity.
-///
-/// * `_MM_ROUND_TOWARD_ZERO`: Round towards zero (truncate).
-///
-/// Example:
-///
-/// ```rust,ignore
-/// _MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN)
-/// ```
-///
-/// ## Denormals-are-zero/Flush-to-zero Mode
-///
-/// If this bit is set, values that would be denormalized will be set to zero
-/// instead. This is turned off by default.
-///
-/// You can read and enable/disable this mode via the helper functions
-/// `_MM_GET_FLUSH_ZERO_MODE()` and `_MM_SET_FLUSH_ZERO_MODE()`:
-///
-/// ```rust,ignore
-/// _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF); // turn off (default)
-/// _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON); // turn on
-/// ```
-///
+/// This function cannot be used safely as it causes undefined behavior in LLVM.
 ///
 /// [Intel's documentation](https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_setcsr)
 #[rustc_deprecated(
     since = "1.40.0",
-    reason = "modifying MXCSR causes undefined behavior in LLVM, see https://github.com/rust-lang/stdarch/issues/781"
+    reason = "accessing floating point exception state causes undefined behavior in LLVM, see https://github.com/rust-lang/stdarch/issues/781"
 )]
 #[inline]
 #[target_feature(enable = "sse")]
