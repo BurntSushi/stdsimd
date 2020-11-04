@@ -1296,6 +1296,19 @@ pub unsafe fn _mm_store_si128(mem_addr: *mut __m128i, a: __m128i) {
     *mem_addr = a;
 }
 
+/// Store 32-bit integer from the first element of `a` into memory.
+///
+/// `mem_addr` does not need to be aligned on any particular boundary.
+///
+/// [Intel's documentation](https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_storeu_si64)
+#[inline]
+#[target_feature(enable = "sse2")]
+#[cfg_attr(test, assert_instr(movd))]
+#[stable(feature = "simd_x86", since = "1.27.0")]
+pub unsafe fn _mm_storeu_si32(mem_addr: *mut u8, a: __m128i) {
+    ptr::copy_nonoverlapping(&a as *const _ as *const u8, mem_addr, 4);
+}
+
 /// Stores 128-bits of integer data from `a` into memory.
 ///
 /// `mem_addr` does not need to be aligned on any particular boundary.
@@ -3997,6 +4010,33 @@ mod tests {
         let mut r = _mm_set1_epi8(0);
         _mm_store_si128(&mut r as *mut _ as *mut __m128i, a);
         assert_eq_m128i(r, a);
+    }
+
+    #[simd_test(enable = "sse2")]
+    unsafe fn test_mm_storeu_si32() {
+        let mut vals = [0x0Fu8; 20];
+        // NOTE: Will endianess be a problem?
+        let a = _mm_set_epi64x(0, 0x07_06_05_04_03_02_01_00);
+
+        let mut ofs = 0;
+        let mut p = vals.as_mut_ptr();
+
+        // Make sure p is **not** aligned to 16-byte boundary
+        if (p as usize) & 0xf == 0 {
+            ofs = 1;
+            p = p.offset(1);
+        }
+
+        _mm_storeu_si32(p, *black_box(&a));
+
+        if ofs > 0 {
+            assert_eq!(vals[ofs - 1], 0x0F);
+        }
+        assert_eq!(vals[ofs + 0], 0);
+        assert_eq!(vals[ofs + 1], 1);
+        assert_eq!(vals[ofs + 2], 2);
+        assert_eq!(vals[ofs + 3], 3);
+        assert_eq!(vals[ofs + 4], 0x0F);
     }
 
     #[simd_test(enable = "sse2")]

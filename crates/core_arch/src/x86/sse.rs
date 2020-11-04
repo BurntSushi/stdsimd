@@ -1366,6 +1366,31 @@ pub unsafe fn _mm_storer_ps(p: *mut f32, a: __m128) {
     *(p as *mut __m128) = b;
 }
 
+/// Store 16-bit integer from the first element of `a` into memory.
+///
+/// `mem_addr` does not need to be aligned on any particular boundary.
+///
+/// [Intel's documentation](https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_storeu_si16)
+#[inline]
+#[target_feature(enable = "sse")]
+#[stable(feature = "simd_x86", since = "1.27.0")]
+pub unsafe fn _mm_storeu_si16(mem_addr: *mut u8, a: __m128i) {
+    ptr::copy_nonoverlapping(&a as *const _ as *const u8, mem_addr, 2);
+}
+
+/// Store 64-bit integer from the first element of `a` into memory.
+///
+/// `mem_addr` does not need to be aligned on any particular boundary.
+///
+/// [Intel's documentation](https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_storeu_si64)
+#[inline]
+#[target_feature(enable = "sse")]
+#[cfg_attr(test, assert_instr(movq))]
+#[stable(feature = "simd_x86", since = "1.27.0")]
+pub unsafe fn _mm_storeu_si64(mem_addr: *mut u8, a: __m128i) {
+    ptr::copy_nonoverlapping(&a as *const _ as *const u8, mem_addr, 8);
+}
+
 /// Returns a `__m128` with the first component from `b` and the remaining
 /// components from `a`.
 ///
@@ -3198,6 +3223,62 @@ mod tests {
         assert_eq!(vals[ofs + 2], 3.0);
         assert_eq!(vals[ofs + 3], 4.0);
         assert_eq!(vals[ofs + 4], 0.0);
+    }
+
+    #[simd_test(enable = "sse")]
+    unsafe fn test_mm_storeu_si16() {
+        let mut vals = [0x0Fu8; 20];
+        // NOTE: Will endianess be a problem?
+        let a = _mm_set_epi64x(0, 0x07_06_05_04_03_02_01_00);
+
+        let mut ofs = 0;
+        let mut p = vals.as_mut_ptr();
+
+        // Make sure p is **not** aligned to 16-byte boundary
+        if (p as usize) & 0xf == 0 {
+            ofs = 1;
+            p = p.offset(1);
+        }
+
+        _mm_storeu_si16(p, *black_box(&a));
+
+        if ofs > 0 {
+            assert_eq!(vals[ofs - 1], 0x0F);
+        }
+        assert_eq!(vals[ofs + 0], 0);
+        assert_eq!(vals[ofs + 1], 1);
+        assert_eq!(vals[ofs + 2], 0x0F);
+    }
+
+    #[simd_test(enable = "sse")]
+    unsafe fn test_mm_storeu_si64() {
+        let mut vals = [0x0Fu8; 20];
+        // NOTE: Will endianess be a problem?
+        let a = _mm_set_epi64x(0, 0x07_06_05_04_03_02_01_00);
+
+        let mut ofs = 0;
+        let mut p = vals.as_mut_ptr();
+
+        // Make sure p is **not** aligned to 16-byte boundary
+        if (p as usize) & 0xf == 0 {
+            ofs = 1;
+            p = p.offset(1);
+        }
+
+        _mm_storeu_si64(p, *black_box(&a));
+
+        if ofs > 0 {
+            assert_eq!(vals[ofs - 1], 0x0F);
+        }
+        assert_eq!(vals[ofs + 0], 0);
+        assert_eq!(vals[ofs + 1], 1);
+        assert_eq!(vals[ofs + 2], 2);
+        assert_eq!(vals[ofs + 3], 3);
+        assert_eq!(vals[ofs + 4], 4);
+        assert_eq!(vals[ofs + 5], 5);
+        assert_eq!(vals[ofs + 6], 6);
+        assert_eq!(vals[ofs + 7], 7);
+        assert_eq!(vals[ofs + 8], 0x0F);
     }
 
     #[simd_test(enable = "sse")]
