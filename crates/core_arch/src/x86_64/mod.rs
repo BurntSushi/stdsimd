@@ -36,6 +36,9 @@ pub use self::avx2::*;
 mod avx512f;
 pub use self::avx512f::*;
 
+mod avx512dq;
+pub use self::avx512dq::*;
+
 mod bswap;
 pub use self::bswap::*;
 

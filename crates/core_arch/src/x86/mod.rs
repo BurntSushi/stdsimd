@@ -811,6 +811,9 @@ pub unsafe fn ud2() -> ! {
     intrinsics::abort()
 }
 
+mod avx512dq;
+pub use self::avx512dq::*;
+
 mod avx512f;
 pub use self::avx512f::*;
 
