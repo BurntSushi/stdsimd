@@ -352,6 +352,15 @@ extern "C" {
     fn vsri_n_s64_(a: int64x1_t, b: int64x1_t, n: i32) -> int64x1_t;
     #[link_name = "llvm.aarch64.neon.vsri.v2i64"]
     fn vsriq_n_s64_(a: int64x2_t, b: int64x2_t, n: i32) -> int64x2_t;
+
+    #[link_name = "llvm.fmuladd.v2f32"]
+    fn vmla_f32_(a: float32x2_t, b: float32x2_t, c: float32x2_t) -> float32x2_t;
+    #[link_name = "llvm.fmuladd.v4f32"]
+    fn vmlaq_f32_(a: float32x4_t, b: float32x4_t, c: float32x4_t) -> float32x4_t;
+    #[link_name = "llvm.fmuladd.f64"]
+    fn vmla_f64_(a: float64x1_t, b: float64x1_t, c: float64x1_t) -> float64x1_t;
+    #[link_name = "llvm.fmuladd.v2f64"]
+    fn vmlaq_f64_(a: float64x2_t, b: float64x2_t, c: float64x2_t) -> float64x2_t;
 }
 
 /// Load multiple single-element structures to one, two, three, or four registers.
@@ -988,6 +997,38 @@ pub unsafe fn vaddvq_s64(a: int64x2_t) -> i64 {
 #[cfg_attr(test, assert_instr(addp))]
 pub unsafe fn vaddvq_u64(a: uint64x2_t) -> u64 {
     vaddvq_u64_(a)
+}
+
+/// Vector multiply accumulate
+#[inline]
+#[target_feature(enable = "neon")]
+#[cfg_attr(test, assert_instr(fmla))]
+pub unsafe fn vmla_f32(a: float32x2_t, b: float32x2_t, c: float32x2_t) -> float32x2_t {
+    vmla_f32_(b, c, a)
+}
+
+/// Vector multiply accumulate
+#[inline]
+#[target_feature(enable = "neon")]
+#[cfg_attr(test, assert_instr(fmla))]
+pub unsafe fn vmlaq_f32(a: float32x4_t, b: float32x4_t, c: float32x4_t) -> float32x4_t {
+    vmlaq_f32_(b, c, a)
+}
+
+/// Vector multiply accumulate
+#[inline]
+#[target_feature(enable = "neon")]
+#[cfg_attr(test, assert_instr(fmadd))]
+pub unsafe fn vmla_f64(a: float64x1_t, b: float64x1_t, c: float64x1_t) -> float64x1_t {
+    vmla_f64_(b, c, a)
+}
+
+/// Vector multiply accumulate
+#[inline]
+#[target_feature(enable = "neon")]
+#[cfg_attr(test, assert_instr(fmla))]
+pub unsafe fn vmlaq_f64(a: float64x2_t, b: float64x2_t, c: float64x2_t) -> float64x2_t {
+    vmlaq_f64_(b, c, a)
 }
 
 /// Polynomial multiply long
@@ -4045,6 +4086,43 @@ mod tests {
         let a = u64x2::new(1, 2);
         let r: u64 = transmute(vaddvq_u64(transmute(a)));
         let e = 3_u64;
+        assert_eq!(r, e);
+    }
+
+    #[simd_test(enable = "neon")]
+    unsafe fn test_vmla_f32() {
+        let a = f32x2::new(0.0, 1.0);
+        let b = f32x2::new(1.0, 2.0);
+        let c = f32x2::new(2.0, 3.0);
+        let r: f32x2 = transmute(vmla_f32(transmute(a), transmute(b), transmute(c)));
+        let e = f32x2::new(2.0, 7.0);
+        assert_eq!(r, e);
+    }
+    #[simd_test(enable = "neon")]
+    unsafe fn test_vmlaq_f32() {
+        let a = f32x4::new(0.0, 1.0, 2.0, 3.0);
+        let b = f32x4::new(1.0, 2.0, 3.0, 4.0);
+        let c = f32x4::new(2.0, 3.0, 4.0, 5.0);
+        let r: f32x4 = transmute(vmlaq_f32(transmute(a), transmute(b), transmute(c)));
+        let e = f32x4::new(2.0, 7.0, 14.0, 23.0);
+        assert_eq!(r, e);
+    }
+    #[simd_test(enable = "neon")]
+    unsafe fn test_vmla_f64() {
+        let a = 1.;
+        let b = 2.;
+        let c = 3.;
+        let r: f64 = transmute(vmla_f64(transmute(a), transmute(b), transmute(c)));
+        let e = 7.;
+        assert_eq!(r, e);
+    }
+    #[simd_test(enable = "neon")]
+    unsafe fn test_vmlaq_f64() {
+        let a = f64x2::new(0.0, 1.0);
+        let b = f64x2::new(1.0, 2.0);
+        let c = f64x2::new(2.0, 3.0);
+        let r: f64x2 = transmute(vmlaq_f64(transmute(a), transmute(b), transmute(c)));
+        let e = f64x2::new(2.0, 7.0);
         assert_eq!(r, e);
     }
 }
