@@ -191,6 +191,7 @@ others at:
 * [`powerpc64`]
 * [`nvptx`]
 * [`wasm32`]
+* [`wasm64`]
 
 [`x86`]: x86/index.html
 [`x86_64`]: x86_64/index.html
@@ -201,7 +202,8 @@ others at:
 [`powerpc`]: powerpc/index.html
 [`powerpc64`]: powerpc64/index.html
 [`nvptx`]: nvptx/index.html
-[`wasm32`]: wasm32/index.html
+[`wasm32`]: wasm/index.html
+[`wasm64`]: wasm/index.html
 
 # Examples
 

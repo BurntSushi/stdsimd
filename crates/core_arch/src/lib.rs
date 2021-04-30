@@ -41,7 +41,7 @@
     bench_black_box
 )]
 #![cfg_attr(test, feature(test, abi_vectorcall))]
-#![cfg_attr(all(test, target_arch = "wasm32"), feature(wasm_simd))]
+#![cfg_attr(all(test, target_arch = "wasm32", target_arch = "wasm64"), feature(wasm_simd))]
 #![deny(clippy::missing_inline_in_public_items)]
 #![allow(
     clippy::inline_always,
