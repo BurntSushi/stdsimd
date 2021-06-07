@@ -12,7 +12,8 @@ FLAGS:
 
 OPTIONS:
         --cppcompiler <CPPCOMPILER>    The C++ compiler to use for compiling the c++ code [default: clang++]
-        --toolchain <TOOLCHAIN>        The rust toolchain to use for building the rust code [default: nightly]
+        --runner <RUNNER>              Run the C programs under emulation with this command
+        --toolchain <TOOLCHAIN>        The rust toolchain to use for building the rust code
 
 ARGS:
     <INPUT>    The input file containing the intrinsics

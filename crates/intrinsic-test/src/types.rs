@@ -366,10 +366,10 @@ impl IntrinsicType {
             } => (0..(simd_len.unwrap_or(1) * vec_len.unwrap_or(1)))
                 .map(|i| {
                     format!(
-                        "{}{})",
+                        "{}({})",
                         match language {
-                            &Language::Rust => "bits_to_float!(f32, ",
-                            &Language::C => "cast<float, uint32_t>(",
+                            &Language::Rust => "f32::from_bits",
+                            &Language::C => "cast<float, uint32_t>",
                         },
                         values_for_pass(32, i, pass),
                     )
@@ -385,10 +385,10 @@ impl IntrinsicType {
             } => (0..(simd_len.unwrap_or(1) * vec_len.unwrap_or(1)))
                 .map(|i| {
                     format!(
-                        "{}{}{})",
+                        "{}({}{})",
                         match language {
-                            &Language::Rust => "bits_to_float!(f64,",
-                            &Language::C => "cast<double, uint64_t>(",
+                            &Language::Rust => "f64::from_bits",
+                            &Language::C => "cast<double, uint64_t>",
                         },
                         values_for_pass(64, i, pass),
                         match language {

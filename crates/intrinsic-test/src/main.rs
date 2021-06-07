@@ -67,12 +67,6 @@ fn generate_rust_program(intrinsic: &Intrinsic) -> String {
 #![feature(stdsimd)]
 #![allow(overflowing_literals)]
 use core::arch::aarch64::*;
-#[allow(unused_macros)]
-macro_rules! bits_to_float(
-    ($t:ty, $bits:expr) => (
-        {{ let x: $t = ::std::mem::transmute($bits); x  }}
-    )
-);
 
 fn main() {{
 {passes}
@@ -86,14 +80,17 @@ fn main() {{
 }
 
 fn compile_c(c_filename: &str, intrinsic: &Intrinsic, compiler: &str) -> bool {
+    let flags = std::env::var("CPPFLAGS").unwrap_or("".into());
+
     let output = Command::new("sh")
         .arg("-c")
         .arg(format!(
-            "{cpp} -Wno-narrowing -O2 -target {target} -o c_programs/{intrinsic} {filename}",
+            "{cpp} {cppflags} -Wno-narrowing -O2 -target {target} -o c_programs/{intrinsic} {filename}",
             target = "aarch64-unknown-linux-gnu",
             filename = c_filename,
             intrinsic = intrinsic.name,
             cpp = compiler,
+            cppflags = flags,
         ))
         .output();
     if let Ok(output) = output {
@@ -182,8 +179,9 @@ path = "{intrinsic}/main.rs""#,
         .current_dir("rust_programs")
         .arg("-c")
         .arg(format!(
-            "cargo +{toolchain} build --release",
+            "cargo {toolchain} build --release --target {target}",
             toolchain = toolchain,
+            target = "aarch64-unknown-linux-gnu",
         ))
         .output();
     if let Ok(output) = output {
@@ -217,7 +215,6 @@ fn main() {
         .arg(
             Arg::with_name("TOOLCHAIN")
                 .takes_value(true)
-                .default_value("nightly")
                 .long("toolchain")
                 .help("The rust toolchain to use for building the rust code"),
         )
@@ -228,12 +225,21 @@ fn main() {
                 .long("cppcompiler")
                 .help("The C++ compiler to use for compiling the c++ code"),
         )
+        .arg(
+            Arg::with_name("RUNNER")
+                .takes_value(true)
+                .long("runner")
+                .help("Run the C programs under emulation with this command"),
+        )
         .get_matches();
 
     let filename = matches.value_of("INPUT").unwrap();
-    let toolchain = matches.value_of("TOOLCHAIN").unwrap();
-    let cpp_compiler = matches.value_of("CPPCOMPILER").unwrap();
+    let toolchain = matches
+        .value_of("TOOLCHAIN")
+        .map_or("".into(), |t| format!("+{}", t));
 
+    let cpp_compiler = matches.value_of("CPPCOMPILER").unwrap();
+    let c_runner = matches.value_of("RUNNER").unwrap_or("");
     let mut csv_reader = csv::Reader::from_reader(std::fs::File::open(filename).unwrap());
 
     let mut intrinsics = csv_reader
@@ -288,7 +294,7 @@ fn main() {
         std::process::exit(3);
     }
 
-    if !compare_outputs(&intrinsics, &toolchain) {
+    if !compare_outputs(&intrinsics, &toolchain, &c_runner) {
         std::process::exit(1)
     }
 }
@@ -299,14 +305,15 @@ enum FailureReason {
     Difference(String, String, String),
 }
 
-fn compare_outputs(intrinsics: &Vec<Intrinsic>, toolchain: &str) -> bool {
+fn compare_outputs(intrinsics: &Vec<Intrinsic>, toolchain: &str, runner: &str) -> bool {
     let intrinsics = intrinsics
         .par_iter()
         .filter_map(|intrinsic| {
             let c = Command::new("sh")
                 .arg("-c")
                 .arg(format!(
-                    "./c_programs/{intrinsic}",
+                    "{runner} ./c_programs/{intrinsic}",
+                    runner = runner,
                     intrinsic = intrinsic.name,
                 ))
                 .output();
@@ -314,9 +321,10 @@ fn compare_outputs(intrinsics: &Vec<Intrinsic>, toolchain: &str) -> bool {
                 .current_dir("rust_programs")
                 .arg("-c")
                 .arg(format!(
-                    "cargo +{toolchain} run --release --bin {intrinsic}",
+                    "cargo {toolchain} run --release --target {target} --bin {intrinsic}",
                     intrinsic = intrinsic.name,
                     toolchain = toolchain,
+                    target = "aarch64-unknown-linux-gnu",
                 ))
                 .output();
 
