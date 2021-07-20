@@ -847,6 +847,9 @@ pub use self::avx512vaes::*;
 mod avx512vpclmulqdq;
 pub use self::avx512vpclmulqdq::*;
 
+mod avx512vp2intersect;
+pub use self::avx512vp2intersect::*;
+
 mod bt;
 pub use self::bt::*;
 
