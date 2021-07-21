@@ -23,9 +23,9 @@ pub enum Language {
     C,
 }
 
-fn generate_c_program(header_file: &str, intrinsic: &Intrinsic) -> String {
+fn generate_c_program(header_files: &[&str], intrinsic: &Intrinsic) -> String {
     format!(
-        r#"#include <{header_file}>
+        r#"{header_files}
 #include <iostream>
 #include <cstring>
 #include <iomanip>
@@ -52,7 +52,11 @@ int main(int argc, char **argv) {{
 {passes}
     return 0;
 }}"#,
-        header_file = header_file,
+        header_files = header_files
+            .iter()
+            .map(|header| format!("#include <{}>", header))
+            .collect::<Vec<_>>()
+            .join("\n"),
         passes = (1..20)
             .map(|idx| intrinsic.generate_pass_c(idx))
             .collect::<Vec<_>>()
@@ -85,8 +89,9 @@ fn compile_c(c_filename: &str, intrinsic: &Intrinsic, compiler: &str) -> bool {
     let output = Command::new("sh")
         .arg("-c")
         .arg(format!(
-            "{cpp} {cppflags} -Wno-narrowing -O2 -target {target} -o c_programs/{intrinsic} {filename}",
+            "{cpp} {cppflags} {arch_flags} -Wno-narrowing -O2 -target {target} -o c_programs/{intrinsic} {filename}",
             target = "aarch64-unknown-linux-gnu",
+            arch_flags = "-march=armv8-a+crypto+crc",
             filename = c_filename,
             intrinsic = intrinsic.name,
             cpp = compiler,
@@ -125,7 +130,7 @@ fn build_c(intrinsics: &Vec<Intrinsic>, compiler: &str) -> bool {
             let c_filename = format!(r#"c_programs/{}.cpp"#, i.name);
             let mut file = File::create(&c_filename).unwrap();
 
-            let c_code = generate_c_program("arm_neon.h", &i);
+            let c_code = generate_c_program(&["arm_neon.h", "arm_acle.h"], &i);
             file.write_all(c_code.into_bytes().as_slice()).unwrap();
             compile_c(&c_filename, &i, compiler)
         })
